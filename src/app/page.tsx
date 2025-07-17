@@ -203,7 +203,7 @@ export default function LingoLensPage() {
       <header className="py-6">
         <div className="container mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-extrabold font-headline tracking-tight text-primary">
-            LingoLens
+            LinguaLens
           </h1>
           <p className="text-muted-foreground mt-2">
             AI-powered text translation and language learning.
