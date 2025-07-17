@@ -50,6 +50,10 @@ const languages = [
   { value: 'Arabic', label: 'Arabic', code: 'ar-SA' },
   { value: 'Portuguese', label: 'Portuguese', code: 'pt-PT' },
   { value: 'Italian', label: 'Italian', code: 'it-IT' },
+  { value: 'Hindi', label: 'Hindi', code: 'hi-IN' },
+  { value: 'Bengali', label: 'Bengali', code: 'bn-IN' },
+  { value: 'Tamil', label: 'Tamil', code: 'ta-IN' },
+  { value: 'Telugu', label: 'Telugu', code: 'te-IN' },
 ];
 
 export default function LingoLensPage() {
