@@ -39,6 +39,7 @@ import { useToast } from '@/hooks/use-toast';
 import { lookupWordDefinition, LookupWordDefinitionOutput } from '@/ai/flows/lookup-word-definition';
 import { translateText } from '@/ai/flows/translate-text';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
+import { extractTextFromImage } from '@/ai/flows/extract-text-from-image';
 
 const languages = [
   { value: 'English', label: 'English', code: 'en-US' },
@@ -65,6 +66,7 @@ export default function LingoLensPage() {
   const [isTranslating, setIsTranslating] = useState(false);
   const [isDefining, setIsDefining] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
   const [definition, setDefinition] = useState<LookupWordDefinitionOutput | null>(null);
   const [currentWord, setCurrentWord] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -139,16 +141,38 @@ export default function LingoLensPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    const reader = new FileReader();
+
     if (file.type === 'text/plain') {
-      const reader = new FileReader();
       reader.onload = (e) => {
         setOriginalText(e.target?.result as string);
       };
       reader.readAsText(file);
+    } else if (file.type.startsWith('image/')) {
+        reader.onload = async (e) => {
+            const imageDataUri = e.target?.result as string;
+            setIsExtracting(true);
+            setOriginalText('Extracting text from image...');
+            try {
+                const result = await extractTextFromImage({ imageDataUri });
+                setOriginalText(result.extractedText);
+            } catch (error) {
+                console.error('Text extraction error:', error);
+                toast({
+                    title: 'Text Extraction Failed',
+                    description: 'Could not extract text from the image. Please try another image.',
+                    variant: 'destructive',
+                });
+                setOriginalText('');
+            } finally {
+                setIsExtracting(false);
+            }
+        };
+        reader.readAsDataURL(file);
     } else {
       toast({
         title: 'Unsupported File Type',
-        description: `Only .txt files are supported for now. You uploaded a ${file.type} file.`,
+        description: `Only .txt, .jpg, and .png files are supported. You uploaded a ${file.type} file.`,
         variant: 'destructive'
       });
     }
@@ -238,19 +262,21 @@ export default function LingoLensPage() {
                   onChange={(e) => setOriginalText(e.target.value)}
                   placeholder="Type or paste your text here..."
                   className="min-h-[200px] text-base resize-none"
+                  disabled={isExtracting}
                 />
               </CardContent>
               <CardFooter className="flex-wrap gap-2 justify-between">
                 <div className="flex gap-2">
-                    <Button onClick={() => fileInputRef.current?.click()} variant="outline">
-                        <Upload className="mr-2 h-4 w-4" /> Upload
+                    <Button onClick={() => fileInputRef.current?.click()} variant="outline" disabled={isExtracting}>
+                        {isExtracting ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                        Upload
                     </Button>
-                    <input type="file" ref={fileInputRef} onChange={handleFileUpload} hidden accept=".txt" />
+                    <input type="file" ref={fileInputRef} onChange={handleFileUpload} hidden accept=".txt,image/jpeg,image/png" />
                     <Button variant="outline" onClick={() => toast({title: "Coming Soon!", description: "Camera scanning will be available in a future update."})}>
                         <Camera className="mr-2 h-4 w-4" /> Scan
                     </Button>
                 </div>
-                <Button onClick={handleTranslate} disabled={isTranslating || !originalText.trim()} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Button onClick={handleTranslate} disabled={isTranslating || !originalText.trim() || isExtracting} className="bg-primary hover:bg-primary/90 text-primary-foreground">
                   {isTranslating ? (
                     <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
@@ -271,7 +297,7 @@ export default function LingoLensPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="min-h-[200px] text-base">
-                {isTranslating ? (
+                {isTranslating || isExtracting ? (
                   <div className="flex items-center justify-center h-full">
                     <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
                   </div>
