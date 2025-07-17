@@ -38,6 +38,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { lookupWordDefinition, LookupWordDefinitionOutput } from '@/ai/flows/lookup-word-definition';
 import { translateText } from '@/ai/flows/translate-text';
+import { textToSpeech } from '@/ai/flows/text-to-speech';
 
 const languages = [
   { value: 'English', label: 'English', code: 'en-US' },
@@ -63,9 +64,11 @@ export default function LingoLensPage() {
   const [targetLanguage, setTargetLanguage] = useState('Spanish');
   const [isTranslating, setIsTranslating] = useState(false);
   const [isDefining, setIsDefining] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [definition, setDefinition] = useState<LookupWordDefinitionOutput | null>(null);
   const [currentWord, setCurrentWord] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
 
   const handleTranslate = async () => {
@@ -111,16 +114,25 @@ export default function LingoLensPage() {
     }
   };
 
-  const handleSpeak = (text: string, lang: string) => {
-    if (!text || typeof window === 'undefined' || !window.speechSynthesis) {
-      toast({ title: 'Text-to-Speech not supported', description: 'Your browser does not support speech synthesis.', variant: 'destructive' });
-      return;
+  const handleSpeak = async (text: string) => {
+    if (!text) return;
+    setIsSpeaking(true);
+    try {
+      const { audioDataUri } = await textToSpeech({ text });
+      if (audioRef.current) {
+        audioRef.current.src = audioDataUri;
+        audioRef.current.play();
+      }
+    } catch (error) {
+      console.error('Text-to-speech error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to generate audio. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSpeaking(false);
     }
-    speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    const langCode = languages.find(l => l.value === lang)?.code || 'en-US';
-    utterance.lang = langCode;
-    speechSynthesis.speak(utterance);
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -163,6 +175,7 @@ export default function LingoLensPage() {
 
   return (
     <div className="flex flex-col min-h-dvh bg-background text-foreground font-body">
+      <audio ref={audioRef} onEnded={() => setIsSpeaking(false)} />
       <header className="py-6">
         <div className="container mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-extrabold font-headline tracking-tight text-primary">
@@ -317,8 +330,9 @@ export default function LingoLensPage() {
                 )}
               </CardContent>
               <CardFooter className="justify-end gap-2">
-                <Button onClick={() => handleSpeak(translatedText, targetLanguage)} disabled={!translatedText || isTranslating} variant="outline" className="text-accent-foreground hover:bg-accent/20 hover:text-accent-foreground border-accent/50">
-                  <Volume2 className="mr-2 h-4 w-4" /> Listen
+                <Button onClick={() => handleSpeak(translatedText)} disabled={!translatedText || isTranslating || isSpeaking} variant="outline" className="text-accent-foreground hover:bg-accent/20 hover:text-accent-foreground border-accent/50">
+                  {isSpeaking ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
+                   Listen
                 </Button>
                 <Button onClick={() => handleCopy(translatedText)} disabled={!translatedText || isTranslating} variant="outline">
                     <Clipboard className="mr-2 h-4 w-4" /> Copy

@@ -3,3 +3,4 @@ config();
 
 import '@/ai/flows/translate-text.ts';
 import '@/ai/flows/lookup-word-definition.ts';
+import '@/ai/flows/text-to-speech.ts';
