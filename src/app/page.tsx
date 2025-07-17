@@ -294,13 +294,19 @@ export default function LingoLensPage() {
                                     <div className="grid gap-4">
                                         <div className="space-y-2">
                                             <h4 className="font-medium leading-none text-primary">{currentWord}</h4>
-                                            {definition.pronunciation && (
-                                              <p className="text-sm text-muted-foreground italic">
-                                                {definition.pronunciation}
-                                              </p>
-                                            )}
                                             <p className="text-sm text-muted-foreground">{definition.definition}</p>
                                         </div>
+                                        {definition.pronunciation && (
+                                            <>
+                                                <Separator />
+                                                <div>
+                                                    <h5 className="font-medium text-sm mb-1">Pronunciation</h5>
+                                                    <p className="text-sm text-muted-foreground italic">
+                                                        {definition.pronunciation}
+                                                    </p>
+                                                </div>
+                                            </>
+                                        )}
                                         {definition.synonyms?.length > 0 && (
                                             <>
                                                 <Separator />
