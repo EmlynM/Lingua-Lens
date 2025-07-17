@@ -208,11 +208,20 @@ export default function LingoLensPage() {
       }
     } catch (error) {
       console.error('Text-to-speech error:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to generate audio. Please try again.',
-        variant: 'destructive',
-      });
+      const errorMessage = (error as Error).message || '';
+      if (errorMessage.includes('429 Too Many Requests')) {
+         toast({
+          title: 'Daily Limit Reached',
+          description: "You've exceeded the free daily limit for text-to-speech. Please try again tomorrow.",
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to generate audio. Please try again.',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setIsSpeaking(false);
     }
