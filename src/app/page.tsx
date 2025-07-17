@@ -108,7 +108,7 @@ export default function LingoLensPage() {
       setDefinition(result);
     } catch (error) {
       console.error('Definition error:', error);
-      setDefinition({ definition: 'Could not find definition.', synonyms: [], examples: [] });
+      setDefinition({ definition: 'Could not find definition.', pronunciation: '', synonyms: [], examples: [] });
     } finally {
       setIsDefining(false);
     }
@@ -294,6 +294,11 @@ export default function LingoLensPage() {
                                     <div className="grid gap-4">
                                         <div className="space-y-2">
                                             <h4 className="font-medium leading-none text-primary">{currentWord}</h4>
+                                            {definition.pronunciation && (
+                                              <p className="text-sm text-muted-foreground italic">
+                                                {definition.pronunciation}
+                                              </p>
+                                            )}
                                             <p className="text-sm text-muted-foreground">{definition.definition}</p>
                                         </div>
                                         {definition.synonyms?.length > 0 && (

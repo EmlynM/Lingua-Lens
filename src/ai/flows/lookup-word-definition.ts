@@ -23,6 +23,7 @@ export type LookupWordDefinitionInput = z.infer<
 
 const LookupWordDefinitionOutputSchema = z.object({
   definition: z.string().describe('The definition of the word.'),
+  pronunciation: z.string().describe('The phonetic pronunciation of the word.'),
   synonyms: z.array(z.string()).describe('Synonyms for the word.'),
   examples: z.array(z.string()).describe('Example usages of the word.'),
 });
@@ -40,9 +41,10 @@ const lookupWordDefinitionPrompt = ai.definePrompt({
   name: 'lookupWordDefinitionPrompt',
   input: {schema: LookupWordDefinitionInputSchema},
   output: {schema: LookupWordDefinitionOutputSchema},
-  prompt: `You are a dictionary. Provide the definition, synonyms, and example usages for the word "{{word}}" in {{language}}.
+  prompt: `You are a dictionary. Provide the definition, pronunciation, synonyms, and example usages for the word "{{word}}" in {{language}}.
 
 Definition:
+Pronunciation:
 Synonyms:
 Examples:`,
 });
