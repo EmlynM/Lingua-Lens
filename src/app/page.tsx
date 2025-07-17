@@ -279,15 +279,15 @@ export default function LingoLensPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-dvh bg-background text-foreground font-body">
+    <div className="flex flex-col min-h-dvh bg-transparent text-foreground font-body">
       <canvas ref={canvasRef} className="hidden"></canvas>
       <audio ref={audioRef} onEnded={() => setIsSpeaking(false)} />
-      <header className="py-6">
+      <header className="py-6 bg-black/50 backdrop-blur-sm">
         <div className="container mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold font-headline tracking-tight text-primary">
+          <h1 className="text-4xl md:text-5xl font-extrabold font-headline tracking-tight text-white">
             LinguaLens
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-gray-300 mt-2">
             AI-powered text translation and language learning.
           </p>
         </div>
@@ -329,7 +329,7 @@ export default function LingoLensPage() {
           </Card>
 
           <div className="grid md:grid-cols-2 gap-8">
-            <Card className="shadow-lg border-none">
+            <Card className="shadow-lg border-none bg-card/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="text-primary" /> Original Text
@@ -401,7 +401,7 @@ export default function LingoLensPage() {
               </CardFooter>
             </Card>
 
-            <Card className="shadow-lg border-none">
+            <Card className="shadow-lg border-none bg-card/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Languages className="text-accent" /> Translated Text
@@ -493,8 +493,8 @@ export default function LingoLensPage() {
           </div>
         </div>
       </main>
-      <footer className="container mx-auto text-center py-4">
-        <p className="text-xs text-muted-foreground">
+      <footer className="container mx-auto text-center py-4 bg-black/50 backdrop-blur-sm">
+        <p className="text-xs text-gray-300">
           Powered by Genkit & Next.js.
         </p>
       </footer>

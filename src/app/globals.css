@@ -84,5 +84,10 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    background-image: url('/background.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
   }
 }
