@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   ArrowRightLeft,
   Camera,
@@ -10,6 +10,8 @@ import {
   Upload,
   Volume2,
   FileText,
+  Video,
+  X,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -34,6 +36,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { lookupWordDefinition, LookupWordDefinitionOutput } from '@/ai/flows/lookup-word-definition';
@@ -72,6 +82,77 @@ export default function LingoLensPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
+
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (isCameraOpen) {
+      const getCameraPermission = async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          setHasCameraPermission(true);
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (error) {
+          console.error('Error accessing camera:', error);
+          setHasCameraPermission(false);
+          toast({
+            variant: 'destructive',
+            title: 'Camera Access Denied',
+            description: 'Please enable camera permissions in your browser settings to use this feature.',
+          });
+        }
+      };
+      getCameraPermission();
+    } else {
+        // Stop camera stream when dialog is closed
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+            videoRef.current.srcObject = null;
+        }
+    }
+  }, [isCameraOpen, toast]);
+
+  const handleCapture = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    setIsCapturing(true);
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+    
+    const imageDataUri = canvas.toDataURL('image/jpeg');
+
+    setIsCameraOpen(false);
+    setOriginalText('Extracting text from image...');
+    setIsExtracting(true);
+
+    try {
+        const result = await extractTextFromImage({ imageDataUri });
+        setOriginalText(result.extractedText);
+    } catch (error) {
+        console.error('Text extraction error:', error);
+        toast({
+            title: 'Text Extraction Failed',
+            description: 'Could not extract text from the captured image. Please try again.',
+            variant: 'destructive',
+        });
+        setOriginalText('');
+    } finally {
+        setIsExtracting(false);
+        setIsCapturing(false);
+    }
+  };
 
   const handleTranslate = async () => {
     if (!originalText.trim()) return;
@@ -199,6 +280,7 @@ export default function LingoLensPage() {
 
   return (
     <div className="flex flex-col min-h-dvh bg-background text-foreground font-body">
+      <canvas ref={canvasRef} className="hidden"></canvas>
       <audio ref={audioRef} onEnded={() => setIsSpeaking(false)} />
       <header className="py-6">
         <div className="container mx-auto text-center">
@@ -272,9 +354,41 @@ export default function LingoLensPage() {
                         Upload
                     </Button>
                     <input type="file" ref={fileInputRef} onChange={handleFileUpload} hidden accept=".txt,image/jpeg,image/png" />
-                    <Button variant="outline" onClick={() => toast({title: "Coming Soon!", description: "Camera scanning will be available in a future update."})}>
-                        <Camera className="mr-2 h-4 w-4" /> Scan
-                    </Button>
+                    <Dialog open={isCameraOpen} onOpenChange={setIsCameraOpen}>
+                        <Button variant="outline" onClick={() => setIsCameraOpen(true)}>
+                            <Camera className="mr-2 h-4 w-4" /> Scan
+                        </Button>
+                        <DialogContent className="max-w-3xl">
+                            <DialogHeader>
+                                <DialogTitle>Camera Scan</DialogTitle>
+                            </DialogHeader>
+                            <div className="relative">
+                                <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
+                                {hasCameraPermission === false && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-md">
+                                    <Alert variant="destructive" className="w-4/5">
+                                        <AlertTitle>Camera Access Denied</AlertTitle>
+                                        <AlertDescription>
+                                            Please enable camera permissions in your browser settings to use this feature.
+                                        </AlertDescription>
+                                    </Alert>
+                                    </div>
+                                )}
+                                 {hasCameraPermission === null && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-md">
+                                        <LoaderCircle className="h-8 w-8 animate-spin text-white" />
+                                    </div>
+                                )}
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsCameraOpen(false)}>Cancel</Button>
+                                <Button onClick={handleCapture} disabled={isCapturing || !hasCameraPermission}>
+                                    {isCapturing ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <Video className="mr-2 h-4 w-4" />}
+                                    Capture
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
                 <Button onClick={handleTranslate} disabled={isTranslating || !originalText.trim() || isExtracting} className="bg-primary hover:bg-primary/90 text-primary-foreground">
                   {isTranslating ? (
