@@ -69,6 +69,9 @@ const textToSpeechFlow = ai.defineFlow(
     outputSchema: TextToSpeechOutputSchema,
   },
   async input => {
+    if (!input.text?.trim()) {
+      throw new Error('Input text is empty or contains only whitespace.');
+    }
     try {
       const {media} = await ai.generate({
         model: googleAI.model('gemini-2.5-flash-preview-tts'),
@@ -82,8 +85,8 @@ const textToSpeechFlow = ai.defineFlow(
         },
         prompt: input.text,
       });
-      if (!media) {
-        throw new Error('no media returned');
+      if (!media?.url) {
+        throw new Error('No audio media was returned from the AI service.');
       }
       const audioBuffer = Buffer.from(
         media.url.substring(media.url.indexOf(',') + 1),
