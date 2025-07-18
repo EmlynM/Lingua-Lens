@@ -69,27 +69,33 @@ const textToSpeechFlow = ai.defineFlow(
     outputSchema: TextToSpeechOutputSchema,
   },
   async input => {
-    const {media} = await ai.generate({
-      model: googleAI.model('gemini-2.5-flash-preview-tts'),
-      config: {
-        responseModalities: ['AUDIO'],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: {voiceName: 'Algenib'},
+    try {
+      const {media} = await ai.generate({
+        model: googleAI.model('gemini-2.5-flash-preview-tts'),
+        config: {
+          responseModalities: ['AUDIO'],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: {voiceName: 'Algenib'},
+            },
           },
         },
-      },
-      prompt: input.text,
-    });
-    if (!media) {
-      throw new Error('no media returned');
+        prompt: input.text,
+      });
+      if (!media) {
+        throw new Error('no media returned');
+      }
+      const audioBuffer = Buffer.from(
+        media.url.substring(media.url.indexOf(',') + 1),
+        'base64'
+      );
+      const audioDataUri =
+        'data:audio/wav;base64,' + (await toWav(audioBuffer));
+      return {audioDataUri};
+    } catch (e: any) {
+        console.error('Text-to-speech flow error:', e);
+        // Re-throw the error to be caught by the client-side handler
+        throw new Error(e.message || 'Failed to generate audio.');
     }
-    const audioBuffer = Buffer.from(
-      media.url.substring(media.url.indexOf(',') + 1),
-      'base64'
-    );
-    const audioDataUri =
-      'data:audio/wav;base64,' + (await toWav(audioBuffer));
-    return {audioDataUri};
   }
 );
