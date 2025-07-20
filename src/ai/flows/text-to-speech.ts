@@ -86,7 +86,8 @@ const textToSpeechFlow = ai.defineFlow(
         prompt: input.text,
       });
       if (!media?.url) {
-        throw new Error('No audio media was returned from the AI service.');
+        // Let the catch block handle this. The service likely returned an error.
+        throw new Error('Failed to generate audio from the AI service.');
       }
       const audioBuffer = Buffer.from(
         media.url.substring(media.url.indexOf(',') + 1),
